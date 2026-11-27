@@ -1,0 +1,37 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'ru.it.inventory'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'ru.it.inventory'
+        minSdk 26
+        targetSdk 35
+        versionCode 3
+        versionName '1.0.1'
+        testInstrumentationRunner 'ru.it.inventory.qa.DeviceChecks'
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    testBuildType 'release'
+    signingConfigs {
+        if (System.getenv('SVERKA_KEYSTORE')) {
+            fieldRelease {
+                storeFile file(System.getenv('SVERKA_KEYSTORE'))
+                storePassword System.getenv('SVERKA_STORE_PASSWORD')
+                keyAlias 'sverka'
+                keyPassword System.getenv('SVERKA_STORE_PASSWORD')
+                enableV2Signing true
+                enableV3Signing true
+            }
+        }
+    }
+    buildTypes { release { minifyEnabled false; if (signingConfigs.findByName('fieldRelease')) signingConfig signingConfigs.fieldRelease } }
+    packaging { resources.excludes += ['META-INF/DEPENDENCIES','META-INF/LICENSE.md','META-INF/NOTICE.md'] }
+}
+dependencies {
+    implementation 'androidx.activity:activity:1.9.3'
+    implementation 'androidx.camera:camera-camera2:1.4.2'
+    implementation 'androidx.camera:camera-lifecycle:1.4.2'
+    implementation 'androidx.camera:camera-view:1.4.2'
+    implementation 'com.google.mlkit:barcode-scanning:17.3.0'
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
+}

@@ -1,0 +1,18 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+  <uses-permission android:name="android.permission.CAMERA"/>
+  <uses-feature android:name="android.hardware.camera" android:required="false"/>
+  <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+  <uses-permission android:name="android.permission.INTERNET" tools:node="remove"/>
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove"/>
+  <uses-permission android:name="android.permission.WAKE_LOCK" tools:node="remove"/>
+  <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
+  <application android:allowBackup="false" android:label="Сверка" android:icon="@drawable/icon" android:theme="@style/AppTheme" android:usesCleartextTraffic="false" android:enableOnBackInvokedCallback="false">
+    <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.reports" android:exported="false" android:grantUriPermissions="true">
+      <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/shared_files"/>
+    </provider>
+    <activity android:name=".Scanner" android:exported="false" android:screenOrientation="portrait" android:configChanges="orientation|screenSize|keyboardHidden"/>
+    <activity android:name=".Main" android:exported="true" android:launchMode="singleTop" android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize" android:windowSoftInputMode="adjustResize">
+      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+    </activity>
+  </application>
+</manifest>

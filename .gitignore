@@ -1,0 +1,11 @@
+.gradle/
+.idea/
+build/
+local.properties
+.DS_Store
+*.apk
+*.p12
+*.jks
+*.keystore
+keystore.properties
+Sverka-signing-backup.zip
