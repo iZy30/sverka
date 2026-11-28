@@ -11,6 +11,9 @@ const Data=(()=>{
     place:['Плановое место','место','местоположение','расположение','кабинет','помещение','локация','location','room','адрес','место установки']
   };
   const ids=['serial','inv','id','barcode','group'];
+  const types=Object.freeze({computer:'Компьютер',device:'Устройство',other:'Другое'});
+  const typeLabel=type=>Object.hasOwn(types,type)?types[type]:'';
+  const validType=type=>type===undefined||type===''||!!typeLabel(type);
   const clean=s=>s==null?'':String(s).trim();
   const norm=s=>clean(s).toUpperCase().replace(/\s+/g,'').replace(/^С(?=\d+$)/,'C');
   const head=s=>clean(s).toLowerCase().replace(/ё/g,'е').replace(/№/g,'номер').replace(/[^a-zа-я0-9]/g,'');
@@ -93,10 +96,10 @@ const Data=(()=>{
       !b.map||!Object.keys(fields).every(k=>Number.isInteger(b.map[k])&&b.map[k]>=-1&&b.map[k]<b.headers.length)||!ids.some(k=>b.map[k]>=0))throw Error('Повреждена исходная ведомость.');
     if(d.manual===true&&(b.headers.length!==2||b.map.name!==0||b.map.serial!==1))throw Error('Повреждена ведомость офиса.');
     const seen=new Set(),codes=new Set();
-    if(!Array.isArray(d.edits)||d.edits.length>b.rows.length||!d.edits.every(e=>{if(!e||!Number.isInteger(e.i)||e.i<0||e.i>=b.rows.length||seen.has(e.i))return false;seen.add(e.i);return ['location','time','note','serial'].every(k=>e[k]===undefined||safeStr(e[k]))&&(e.found===undefined||typeof e.found==='boolean');}))throw Error('Повреждены отметки.');
-    if(!Array.isArray(d.extras)||d.extras.length>50000||!d.extras.every(e=>{if(!e||!safeStr(e.code)||!norm(e.code)||codes.has(norm(e.code)))return false;codes.add(norm(e.code));return ['location','note','time'].every(k=>e[k]===undefined||safeStr(e[k]));}))throw Error('Повреждены записи вне базы.');
+    if(!Array.isArray(d.edits)||d.edits.length>b.rows.length||!d.edits.every(e=>{if(!e||!Number.isInteger(e.i)||e.i<0||e.i>=b.rows.length||seen.has(e.i))return false;seen.add(e.i);return ['location','time','note','serial'].every(k=>e[k]===undefined||safeStr(e[k]))&&(e.found===undefined||typeof e.found==='boolean')&&validType(e.assetType);}))throw Error('Повреждены отметки.');
+    if(!Array.isArray(d.extras)||d.extras.length>50000||!d.extras.every(e=>{if(!e||!safeStr(e.code)||!norm(e.code)||codes.has(norm(e.code)))return false;codes.add(norm(e.code));return ['location','note','time'].every(k=>e[k]===undefined||safeStr(e[k]))&&validType(e.assetType);}))throw Error('Повреждены записи вне базы.');
     return d;}
-  return {fields,ids,norm,head,decode,delimiter,parse,zip,grid,guess,layout,map,base,value,serial,index,match,candidates,suggestions,restore};
+  return {fields,ids,types,typeLabel,norm,head,decode,delimiter,parse,zip,grid,guess,layout,map,base,value,serial,index,match,candidates,suggestions,restore};
 })();
 const DB=(()=>{
   let db;

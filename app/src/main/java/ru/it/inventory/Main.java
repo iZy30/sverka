@@ -2,15 +2,20 @@ package ru.it.inventory;
 
 import android.app.Activity;
 import android.content.*;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.*;
 import android.provider.OpenableColumns;
+import android.text.InputType;
 import android.util.Base64;
 import android.view.*;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 import android.webkit.*;
 import android.widget.FrameLayout;
 import androidx.core.content.FileProvider;
+import androidx.core.view.WindowCompat;
 import org.json.*;
 import java.io.*;
 import java.util.*;
@@ -22,6 +27,7 @@ public final class Main extends Activity {
     static final int MIB=1024*1024;
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private final Object fileLock=new Object();
+    private FrameLayout root;
     private WebView web;
     private File temp;
     private OutputStream writer;
@@ -29,15 +35,38 @@ public final class Main extends Activity {
     private int length;
     private volatile boolean external;
 
+    private static SharedPreferences appearance(Context context) {
+        return context.getSharedPreferences("appearance",MODE_PRIVATE);
+    }
+    private static boolean systemDark(Context context) {
+        int mode=context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        return mode==Configuration.UI_MODE_NIGHT_YES;
+    }
+    static boolean darkAppearance(Context context) {
+        String preference=appearance(context).getString("theme","system");
+        return "dark".equals(preference)||("system".equals(preference)&&systemDark(context));
+    }
+
     @Override public void onCreate(Bundle state){
+        setTheme(darkAppearance(this)?R.style.AppThemeDark:R.style.AppThemeLight);
         super.onCreate(state);
         cleanCache();
         if(state!=null){
             scanContext=state.getString("context","");fileName=state.getString("name","");external=state.getBoolean("external");
             String path=state.getString("out","");if(!path.isEmpty())temp=new File(path);
         }
-        FrameLayout root=new FrameLayout(this);root.setBackgroundColor(0xfff5f5ef);
-        web=new WebView(this);root.addView(web);setContentView(root);insets(root);
+        root=new FrameLayout(this);
+        web=new WebView(this){
+            @Override public InputConnection onCreateInputConnection(EditorInfo editor) {
+                InputConnection connection=super.onCreateInputConnection(editor);
+                if(connection!=null&&(editor.inputType&InputType.TYPE_MASK_CLASS)==InputType.TYPE_CLASS_NUMBER){
+                    editor.inputType=InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_VARIATION_PASSWORD;
+                }
+                return connection;
+            }
+        };
+        root.addView(web);setContentView(root);insets(root);
+        applyAppearance();
         WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         web.setWebViewClient(new WebViewClient(){
             @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest req){return true;}
@@ -45,6 +74,22 @@ public final class Main extends Activity {
         });
         web.addJavascriptInterface(new Bridge(),"Phone");web.loadUrl("https://"+HOST+"/index.html");
     }
+    private void applyAppearance() {
+        boolean dark=darkAppearance(this);
+        int background=dark?0xff0c100e:0xfff5f5ef;
+        root.setBackgroundColor(background);
+        web.setBackgroundColor(background);
+        getWindow().setStatusBarColor(background);
+        getWindow().setNavigationBarColor(dark?background:0xff1e382c);
+        WindowCompat.getInsetsController(getWindow(),root).setAppearanceLightStatusBars(!dark);
+    }
+
+    @Override public void onConfigurationChanged(Configuration configuration) {
+        super.onConfigurationChanged(configuration);
+        applyAppearance();
+        web.evaluateJavascript("window.refreshSverkaTheme && window.refreshSverkaTheme()",null);
+    }
+
     static void insets(View root){
         if(Build.VERSION.SDK_INT>=35)root.setOnApplyWindowInsetsListener((v,w)->{
             android.graphics.Insets i=w.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());
@@ -78,6 +123,17 @@ public final class Main extends Activity {
         JSONArray q=queue();q.put(obj);queue(q);runOnUiThread(()->{if(!isDestroyed())web.evaluateJavascript("window.receivePhone && window.receivePhone()",null);});
     }
     public final class Bridge{
+        @JavascriptInterface public String themePreference() {
+            return appearance(Main.this).getString("theme","system");
+        }
+        @JavascriptInterface public boolean systemDarkTheme() {
+            return systemDark(Main.this);
+        }
+        @JavascriptInterface public void setThemePreference(String preference) {
+            if(!"system".equals(preference)&&!"light".equals(preference)&&!"dark".equals(preference))return;
+            appearance(Main.this).edit().putString("theme",preference).apply();
+            runOnUiThread(()->{if(!isDestroyed())applyAppearance();});
+        }
         @JavascriptInterface public String pending(){synchronized(Main.this){JSONObject o=queue().optJSONObject(0);return o==null?"":o.toString();}}
         @JavascriptInterface public void ack(String id){synchronized(Main.this){
             JSONArray q=queue();JSONObject e=q.optJSONObject(0);if(e==null||!id.equals(e.optString("id")))return;

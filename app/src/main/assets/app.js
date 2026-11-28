@@ -1,10 +1,57 @@
 'use strict';
 const $=id=>document.getElementById(id);
-const glyphs={plus:"M12 5v14M5 12h14",export:'M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4',import:'M12 15V3m-4 4 4-4 4 4M4 16v4h16v-4',folder:'M3 7V5h6l2 2h10v12H3z',pin:'M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z M14 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0',scan:'M3 8V4h4m10 0h4v4m0 8v4h-4M7 20H3v-4m5-8v8m3-8v8m3-8v8m3-8v8',text:'M3 8V4h4m10 0h4v4m0 8v4h-4M7 20H3v-4m5-7h8m-4 0v7m-2 0h4',keyboard:'M3 6h18v12H3z M6 10h1m2 0h1m2 0h1m2 0h1m-9 4h8',enter:'M4 12h15m-5-5 5 5-5 5',search:'M16 16l5 5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',box:'M3 7l9-4 9 4v11l-9 4-9-4z M3 7l9 4 9-4m-9 4v11',check:'M4 12l5 5L20 6',extra:'M12 3l10 17H2z M12 9v4m0 3v.5',back:'M20 12H4m6-6-6 6 6 6',close:'M6 6l12 12M18 6 6 18',copy:'M8 8h12v13H8z M16 8V3H3v13h5'};
+const glyphs={moon:"M20.9 13.35A9 9 0 0 1 10.65 3.1a9 9 0 1 0 10.25 10.25z",plus:"M12 5v14M5 12h14",export:'M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4',import:'M12 15V3m-4 4 4-4 4 4M4 16v4h16v-4',folder:'M3 7V5h6l2 2h10v12H3z',pin:'M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z M14 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0',scan:'M3 8V4h4m10 0h4v4m0 8v4h-4M7 20H3v-4m5-8v8m3-8v8m3-8v8m3-8v8',text:'M3 8V4h4m10 0h4v4m0 8v4h-4M7 20H3v-4m5-7h8m-4 0v7m-2 0h4',keyboard:'M3 6h18v12H3z M6 10h1m2 0h1m2 0h1m2 0h1m-9 4h8',enter:'M4 12h15m-5-5 5 5-5 5',search:'M16 16l5 5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',box:'M3 7l9-4 9 4v11l-9 4-9-4z M3 7l9 4 9-4m-9 4v11',check:'M4 12l5 5L20 6',extra:'M12 3l10 17H2z M12 9v4m0 3v.5',back:'M20 12H4m6-6-6 6 6 6',close:'M6 6l12 12M18 6 6 18',copy:'M8 8h12v13H8z M16 8V3H3v13h5'};
 function icon(k){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('class','ico');svg.setAttribute('aria-hidden','true');const p=document.createElementNS(svg.namespaceURI,'path');p.setAttribute('d',glyphs[k]);svg.appendChild(p);return svg;}
 function el(tag,cls,t){const v=document.createElement(tag);if(cls)v.className=cls;if(t!==undefined)v.textContent=t;return v;}
 function button(t,cls,fn,k){const b=el('button',cls,t);b.type='button';b.onclick=fn;if(k)b.prepend(icon(k));return b;}
 const S={meta:null,base:null,ed:new Map(),ex:new Map(),idx:null,tab:'left',q:'',limit:60,view:'home',busy:false,ready:false,received:false,last:null};
+let chosenManualType='';
+function manualType() {
+  return chosenManualType||(/^[cс]/i.test($('number').value.trim())?'computer':'');
+}
+function refreshManualType() {
+  const selected=manualType();
+  $('manualTypes').querySelectorAll('button').forEach(button=>{
+    button.setAttribute('aria-pressed',String(button.dataset.type===selected));
+  });
+}
+function resetManualEntry() {
+  $('number').value='';
+  $('number').inputMode='text';
+  chosenManualType='';
+  refreshManualType();
+}
+function keepComputerDigits(field) {
+  const value=field.value;
+  const digits=value.replace(/[^0-9]/g,'');
+  const fixed='C'+digits;
+  if(value===fixed)return;
+
+  const beforeCursor=value.slice(0,field.selectionStart);
+  const cursor=1+beforeCursor.replace(/[^0-9]/g,'').length;
+  field.value=fixed;
+  field.setSelectionRange(cursor,cursor);
+}
+function selectManualType(type) {
+  const field=$('number');
+  if(type==='computer'){
+    const partial=field.value.trim().match(/^[cс]?([0-9]*)$/i);
+    field.value='C'+(partial?.[1]||'');
+    chosenManualType='computer';
+  }else{
+    chosenManualType=chosenManualType===type?'':type;
+    if(field.inputMode==='numeric'&&field.value==='C')field.value='';
+  }
+  const inputMode=type==='computer'?'numeric':'text';
+  if(field.inputMode!==inputMode&&document.activeElement===field)field.blur();
+  field.inputMode=inputMode;
+  refreshManualType();
+  field.focus();
+  field.setSelectionRange(field.value.length,field.value.length);
+}
+function computerCode(value) {
+  return value.replace(/^[cс]/i,'C');
+}
 const tick=()=>new Date().toISOString();
 const uid=()=>Array.from(crypto.getRandomValues(new Uint8Array(12)),x=>x.toString(16).padStart(2,'0')).join('');
 const nowText=t=>t?new Date(t).toLocaleString('ru-RU',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
@@ -13,12 +60,37 @@ function modal(title,cancel){const first=$('veil').hidden;if(first)focusFrom=doc
   $('dialogTitle').textContent=title;$('body').textContent='';$('actions').textContent='';$('error').hidden=true;$('veil').hidden=false;document.body.style.overflow='hidden';$('shell').setAttribute('aria-hidden','true');$('body').scrollTop=0;if(first)$('dismiss').focus();}
 function closeDialog(){onCancel=null;$('veil').hidden=true;document.body.style.overflow='';$('shell').removeAttribute('aria-hidden');$('body').textContent='';$('actions').textContent='';if(focusFrom&&document.contains(focusFrom))focusFrom.focus({preventScroll:true});focusFrom=null;}
 function cancelDialog(){if(S.busy)return;if(onCancel){const f=onCancel;onCancel=null;f();}else closeDialog();}
+function appearanceDialog(){
+  modal('Оформление');
+  const options=[['system','Как в системе'],['light','Светлая'],['dark','Тёмная']];
+  const group=el('div','theme-options');
+  group.setAttribute('role','group');
+  group.setAttribute('aria-label','Тема приложения');
+  const refresh=()=>{
+    for(const button of group.children){
+      const selected=button.dataset.themeMode===Theme.get();
+      button.setAttribute('aria-pressed',String(selected));
+      button.classList.toggle('sel',selected);
+    }
+  };
+  for(const [mode,label] of options){
+    const control=choice(label,'',()=>{Theme.set(mode);refresh();});
+    control.dataset.themeMode=mode;
+    control.append(icon('check'));
+    group.append(control);
+  }
+  refresh();
+  $('body').append(group);
+}
 function action(t,fn,cls){const b=button(t,cls||'primary',fn);$('actions').append(b);return b;}
 function choice(t,sub,fn,k){const b=button('','option',fn,k),s=el('span',null,t);if(sub)s.append(el('small',null,sub));b.append(s);return b;}
 function hint(t){$('body').append(el('p','hint',t));}
 function field(label,v,parent){const l=el('label','form',label);l.append(v);(parent||$('body')).append(l);return v;}
 function input(v='',ph='',max=1024){const e=el('input');e.value=v||'';e.placeholder=ph;e.maxLength=max;e.autocomplete='off';return e;}
 function select(opts,v){const s=el('select');for(const [value,t]of opts){const opt=el('option',null,t);opt.value=value;s.append(opt);}s.value=String(v);return s;}
+function typeField(value) {
+  return field('Тип оборудования',select([['','Не указан'],...Object.entries(Data.types)],value||''));
+}
 function check(label,v){const c=el('input');c.type='checkbox';c.checked=!!v;const l=el('label','check');l.append(c,document.createTextNode(label));$('body').append(l);return c;}
 function note(t,cls,bt,fn){$('feedback').hidden=false;$('feedback').className='feedback '+(cls||'');$('msg').textContent=t;$('revert').hidden=!bt;$('revert').textContent=bt||'';$('revert').onclick=fn||null;}
 function fail(e){const t=e&&e.name==='QuotaExceededError'?'Недостаточно памяти для сохранения ведомости.':e&&e.message||'Действие не удалось.';
@@ -29,8 +101,8 @@ async function run(fn){if(S.busy)return;S.busy=true;try{return await fn();}catch
 function get(i,k){return Data.value(S.base,i,k);}
 function serial(i){return Data.serial(S.base,S.ed,i);}
 function name(i){const n=get(i,'name');return n&&n!=='(без наименования в Inside)'?n:get(i,'id')?'Устройство '+get(i,'id'):serial(i)||get(i,'inv')||get(i,'barcode')||get(i,'group')||'Строка '+S.base.numbers[i];}
-function codes(i){return [get(i,'group'),get(i,'id')?'ID '+get(i,'id'):'',serial(i)?'S/N '+serial(i):'',get(i,'inv')?'Инв. '+get(i,'inv'):'',get(i,'dept')].filter(Boolean).join(' · ');}
-function matches(i,q){if(!q)return true;const e=S.ed.get(i)||{};return S.base.rows[i].concat(serial(i),e.note,e.location).join(' ').toLowerCase().includes(q);}
+function codes(i){return [get(i,'group'),get(i,'id')?'ID '+get(i,'id'):'',serial(i)?'S/N '+serial(i):'',get(i,'inv')?'Инв. '+get(i,'inv'):'',get(i,'dept'),Data.typeLabel(S.ed.get(i)?.assetType)].filter(Boolean).join(' · ');}
+function matches(i,q){if(!q)return true;const e=S.ed.get(i)||{};return S.base.rows[i].concat(serial(i),e.note,e.location,Data.typeLabel(e.assetType)).join(' ').toLowerCase().includes(q);}
 function row(t,sub,status,fn){const b=button('','row',fn),mark=el('i',status);mark.append(icon(status==='found'?'check':status==='extra'?'extra':'box'));const s=el('span','text');s.append(el('strong',null,t),el('small',null,sub));b.append(mark,s,el('span','arrow','›'));return b;}
 async function create(meta,b,ed=[],ex=[]){
   const id=uid(),m=Object.assign({},meta,{id,created:tick(),count:b.rows.length});await DB.put([['books',m],['bases',Object.assign({},b,{id})],['marks',{id,ed,ex}],['prefs',{id:'active',value:id}]]);await load(id,false);}
@@ -38,7 +110,7 @@ async function load(id,remember=true){
   const [m,b,w]=await Promise.all([DB.get('books',id),DB.get('bases',id),DB.get('marks',id)]);if(!m||!b||!w)throw Error('Ведомость недоступна.');
   if(remember)await DB.put([['prefs',{id:'active',value:id}]]);
   S.meta=m;S.base=b;S.ed=new Map(w.ed.map(e=>[e.i,e]));S.ex=new Map(w.ex.map(e=>[Data.norm(e.code),e]));S.idx=Data.index(b,S.ed);S.q='';S.tab='left';S.limit=60;S.last=null;
-  $('q').value='';$('number').value='';$('feedback').hidden=true;home();render();window.scrollTo(0,0);}
+  $('q').value='';resetManualEntry();$('feedback').hidden=true;home();render();window.scrollTo(0,0);}
 function home(){S.view='home';$('home').hidden=false;$('ledgers').hidden=true;$('report').hidden=false;}
 async function books(){const all=await DB.get('books');S.view='books';$('home').hidden=true;$('ledgers').hidden=false;$('report').hidden=true;$('booklist').textContent='';
   $('toHome').hidden=!S.meta;
@@ -53,7 +125,7 @@ function render(){const b=S.base,n=b.rows.length,f=[...S.ed.values()].filter(e=>
   $('groups').textContent=groups.size?'Комплекты '+[...groups.values()].filter(Boolean).length+' / '+groups.size:'Осталось '+(n-f);
   const counts={left:n-f,found:f,extra:S.ex.size};document.querySelectorAll('[data-tab]').forEach(x=>{const on=x.dataset.tab===S.tab;x.classList.toggle('on',on);x.setAttribute('aria-selected',on);x.querySelector('b').textContent=counts[x.dataset.tab];});list();}
 function list(){const out=document.createDocumentFragment(),q=S.q.toLowerCase().trim();let hits=0;
-  if(S.tab==='extra'){for(const e of [...S.ex.values()].sort((a,b)=>(b.time||'').localeCompare(a.time||''))){if(q&&![e.code,e.location,e.note].join(' ').toLowerCase().includes(q))continue;if(++hits<=S.limit)out.append(row(e.code,[e.location,e.note,nowText(e.time)].filter(Boolean).join(' · '),'extra',()=>outside(e)));}}
+  if(S.tab==='extra'){for(const e of [...S.ex.values()].sort((a,b)=>(b.time||'').localeCompare(a.time||''))){if(q&&![e.code,e.location,e.note,Data.typeLabel(e.assetType)].join(' ').toLowerCase().includes(q))continue;if(++hits<=S.limit)out.append(row(e.code,[Data.typeLabel(e.assetType),e.location,e.note,nowText(e.time)].filter(Boolean).join(' · '),'extra',()=>outside(e)));}}
   else{const ids=S.tab==='found'?[...S.ed.values()].filter(e=>e.found).sort((a,b)=>(b.time||'').localeCompare(a.time||'')).map(e=>e.i):S.base.rows.keys();for(const i of ids){if(S.tab==='left'&&(S.ed.get(i)||{}).found||!matches(i,q))continue;if(++hits<=S.limit)out.append(row(name(i),codes(i),S.tab,()=>card(i)));}}
   if(!hits)out.append(el('p','empty',q?'Совпадений нет.':S.tab==='extra'?'Здесь появятся коды, которых нет в ведомости.':S.tab==='found'?'Пока нет отмеченных позиций.':S.base.rows.length?'Все позиции найдены.':'В этой ведомости пока нет оборудования.'));$('items').textContent='';$('items').append(out);$('more').hidden=hits<=S.limit;}
 async function change(mods,extras,remember=true){
@@ -62,19 +134,34 @@ async function change(mods,extras,remember=true){
   for(const[k,v]of extras){rx.push([k,ex.get(k)]);if(v)ex.set(k,v);else ex.delete(k);}
   await DB.put([['marks',{id:S.meta.id,ed:[...ed.values()],ex:[...ex.values()]}]]);S.ed=ed;S.ex=ex;if(reindex)S.idx=Data.index(S.base,ed);S.last=remember?{id:S.meta.id,rev,rx}:null;render();}
 function changed(t,cls){note(t,cls,'Отменить',()=>run(async()=>{const r=S.last;if(r&&r.id===S.meta.id){await change(r.rev,r.rx,false);note('Последнее изменение отменено.');}}));}
-async function mark(ids,raw){const fresh=ids.filter(i=>!(S.ed.get(i)||{}).found);
+async function mark(ids,raw,type=''){const fresh=ids.filter(i=>!(S.ed.get(i)||{}).found);
   if(!fresh.length){note('Уже отмечено: '+raw,'warn','Открыть',()=>card(ids[0]));return;}
-  const t=tick();await change(fresh.map(i=>{const e=Object.assign({},S.ed.get(i),{found:true,time:t});if(S.meta.location)e.location=S.meta.location;return [i,e];}),[]);
+  const t=tick();await change(fresh.map(i=>{const e=Object.assign({},S.ed.get(i),{found:true,time:t});if(S.meta.location)e.location=S.meta.location;if(type)e.assetType=type;return [i,e];}),[]);
   changed(fresh.length===1?'Найдено: '+name(fresh[0]):'Комплект '+raw+' · отмечено позиций: '+fresh.length);}
-async function scan(raw){raw=String(raw||'').trim();if(!raw)return;if(raw.length>1024)throw Error('Код длиннее 1024 символов. Введите номер с этикетки.');
-  const k=Data.norm(raw),ids=Data.match(S.idx,raw);
-  if(!ids.length){if(S.meta.manual){addDevice(raw);return;}if(S.ex.has(k)){note('Уже записано вне базы: '+raw,'warn','Открыть',()=>outside(S.ex.get(k)));return;}
-    await change([],[[k,{code:raw,time:tick(),location:S.meta.location||'',note:''}]]);changed('Вне базы: '+raw,'warn');return;}
-  if(ids.length===1){await mark(ids,raw);return;}
-  const group=Data.norm(get(ids[0],'group')),shared=!!group&&(k===group||/^\d+$/.test(k)&&'C'+k===group)&&ids.every(i=>Data.norm(get(i,'group'))===group);
+async function scan(raw,type=''){
+  raw=String(raw||'').trim();
+  if(!raw)return;
+  if(raw.length>1024)throw Error('Код длиннее 1024 символов. Введите номер с этикетки.');
+  const code=type==='computer'?computerCode(raw):raw;
+  const k=Data.norm(code);
+  let ids=Data.match(S.idx,code);
+  if(!ids.length&&type==='computer'&&code.startsWith('C'))ids=Data.match(S.idx,'С'+code.slice(1));
+  if(!ids.length){
+    if(S.meta.manual){addDevice(code,type);return;}
+    if(S.ex.has(k)){note('Уже записано вне базы: '+code,'warn','Открыть',()=>outside(S.ex.get(k)));return;}
+    await change([],[[k,{code,time:tick(),location:S.meta.location||'',note:'',assetType:type}]]);
+    changed('Вне базы: '+code,'warn');
+    return;
+  }
+  if(ids.length===1){await mark(ids,code,type);return;}
+  const storedGroup=get(ids[0],'group');
+  const group=Data.norm(storedGroup);
+  const sameGroup=k===group||/^\d+$/.test(k)&&'C'+k===group||
+    type==='computer'&&k===Data.norm(computerCode(storedGroup));
+  const shared=!!group&&sameGroup&&ids.every(i=>Data.norm(get(i,'group'))===group);
   modal('Совпало несколько позиций');hint(shared?'Номер '+raw+' общий для комплекта. Выберите одну позицию или подтвердите весь комплект.':'Код '+raw+' есть у нескольких строк. Выберите конкретную позицию.');
-  const l=el('div','choice-list');for(const i of ids)l.append(choice(name(i),codes(i)+((S.ed.get(i)||{}).found?' · Найдено':''),()=>run(async()=>{closeDialog();await mark([i],raw);})));$('body').append(l);
-  if(shared)action('Отметить комплект · '+ids.length,()=>run(async()=>{closeDialog();await mark(ids,raw);}));}
+  const l=el('div','choice-list');for(const i of ids)l.append(choice(name(i),codes(i)+((S.ed.get(i)||{}).found?' · Найдено':''),()=>run(async()=>{closeDialog();await mark([i],code,shared?'':type);})));$('body').append(l);
+  if(shared)action('Отметить комплект · '+ids.length,()=>run(async()=>{closeDialog();await mark(ids,code);}));}
 function addOffice() {
   modal('Добавить офис');
   const title=field('Название офиса',input('','Например, Владивосток',120));
@@ -88,20 +175,21 @@ function addOffice() {
   title.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();save.click();}};
   title.focus();
 }
-function addDevice(scannedCode='') {
+function addDevice(scannedCode='',type='') {
   modal('Добавить оборудование');
   const label=field('Наименование',input('','Например, монитор',250));
   const code=field('Код или серийный номер',input(scannedCode,'Введите номер с этикетки'));
+  const category=typeField(type);
   const place=field('Фактическое место',input(S.meta.location,'Кабинет или площадка',250));
   action('Добавить в ведомость',()=>run(async()=>{
-    const value=code.value.trim();
+    const value=category.value==='computer'?computerCode(code.value.trim()):code.value.trim();
     if(!value)throw Error('Введите код или серийный номер.');
     if(Data.match(S.idx,value).length)throw Error('Этот номер уже есть в ведомости.');
     if(S.base.rows.length>=25000)throw Error('Достигнут предел в 25 000 позиций.');
     const i=S.base.rows.length;
     const base=Object.assign({},S.base,{rows:S.base.rows.concat([[label.value.trim()||value,value]]),numbers:S.base.numbers.concat([(S.base.numbers.at(-1)||1)+1])});
     const meta=Object.assign({},S.meta,{count:base.rows.length});
-    const mark={i,found:true,location:place.value.trim(),time:tick()};
+    const mark={i,found:true,location:place.value.trim(),time:tick(),assetType:category.value};
     const edits=new Map(S.ed).set(i,mark);
     await DB.put([['books',meta],['bases',base],['marks',{id:meta.id,ed:[...edits.values()],ex:[...S.ex.values()]}]]);
     S.meta=meta;
@@ -121,12 +209,13 @@ function addDevice(scannedCode='') {
 function locationDialog(){modal('Место сверки');hint('Это место будет записано у следующих найденных позиций.');const x=field('Кабинет или площадка',input(S.meta.location,'Например, каб. 204',250));
   action('Сохранить',()=>run(async()=>{const m=Object.assign({},S.meta,{location:x.value.trim()});await DB.put([['books',m]]);S.meta=m;closeDialog();render();}));}
 function card(i,draft,external){
-  const old=S.ed.get(i)||{},d=draft||{serial:serial(i),location:old.location===undefined?S.meta.location:old.location,note:old.note,found:old.found};modal(name(i));const kv=el('div','data');
+  const old=S.ed.get(i)||{},d=draft||{serial:serial(i),location:old.location===undefined?S.meta.location:old.location,note:old.note,found:old.found,assetType:old.assetType};modal(name(i));const kv=el('div','data');
   function pair(k,v){if(!v)return;const r=el('div','kv');r.append(el('span',null,k),el('strong',null,v));kv.append(r);}
   for(const k of ['group','id','inv','barcode','dept','place'])pair(Data.fields[k][0],get(i,k));if(old.found)pair('Отмечено',nowText(old.time));if(kv.childNodes.length)$('body').append(kv);
   const s=field('Серийный номер',input(d.serial,'Введите или считайте с наклейки'));const buttons=el('div','inline');$('body').append(buttons);
   const p=field('Фактическое место',input(d.location,'Кабинет или площадка',250));const t=el('textarea');t.value=d.note||'';t.rows=2;t.maxLength=2000;field('Примечание',t);const found=check('Позиция найдена',d.found);
-  const draftNow=()=>({serial:s.value.trim(),location:p.value.trim(),note:t.value.trim(),found:found.checked});
+  const category=typeField(d.assetType??old.assetType);
+  const draftNow=()=>({serial:s.value.trim(),location:p.value.trim(),note:t.value.trim(),found:found.checked,assetType:category.value});
   for(const [mode,text,k]of [['code','Штрихкод / QR','scan'],['ocr','Текст с камеры','text']])buttons.append(button(text,'outline',()=>openCamera(mode,{project:S.meta.id,i,external,draft:draftNow()}),k));
   if(external)hint('После сохранения номер перейдёт из списка «Вне базы» в карточку.');
   action('Сохранить',()=>run(async()=>{const e=draftNow(),k=Data.norm(e.serial);
@@ -134,11 +223,12 @@ function card(i,draft,external){
     e.time=e.found?(old.found&&old.time||tick()):'';const remove=external&&external===k&&S.ex.has(k)?[[k,null]]:[];
     await change([[i,e]],remove);closeDialog();changed('Карточка сохранена: '+name(i));}));}
 function outside(e){const k=Data.norm(e.code);modal('Позиция вне базы');$('body').append(el('div','data',e.code));const p=field('Фактическое место',input(e.location,'Кабинет или площадка',250)),t=field('Примечание',input(e.note,'Что за оборудование',2000));
-  $('body').append(choice('Привязать к позиции','Записать как серийный номер устройства.',()=>chooseItem(e,p.value,t.value),'scan'));
+  const category=typeField(e.assetType);
+  $('body').append(choice('Привязать к позиции','Записать как серийный номер устройства.',()=>chooseItem({...e,assetType:category.value},p.value,t.value),'scan'));
   action('Удалить',()=>run(async()=>{await change([],[[k,null]]);closeDialog();changed('Код удалён из списка вне базы.');}),'danger');
-  action('Сохранить',()=>run(async()=>{await change([],[[k,Object.assign({},e,{location:p.value.trim(),note:t.value.trim()})]]);closeDialog();changed('Запись сохранена.');}));}
+  action('Сохранить',()=>run(async()=>{await change([],[[k,Object.assign({},e,{location:p.value.trim(),note:t.value.trim(),assetType:category.value})]]);closeDialog();changed('Запись сохранена.');}));}
 function chooseItem(e,p,t){modal('Привязать серийный номер');hint('Номер '+e.code+' · выберите устройство.');const q=field('Найти устройство',input('','Название или номер'));const l=el('div','choice-list');$('body').append(l);
-  function show(){l.textContent='';let n=0;for(let i=0;i<S.base.rows.length;i++){if(!matches(i,q.value.trim().toLowerCase()))continue;l.append(choice(name(i),codes(i),()=>card(i,{serial:e.code,location:p||(S.ed.get(i)||{}).location||S.meta.location,note:t||(S.ed.get(i)||{}).note||'',found:true},Data.norm(e.code))));if(++n>=60)break;}if(!n)l.append(el('p','empty','Совпадений нет.'));}q.oninput=show;show();}
+  function show(){l.textContent='';let n=0;for(let i=0;i<S.base.rows.length;i++){if(!matches(i,q.value.trim().toLowerCase()))continue;l.append(choice(name(i),codes(i),()=>card(i,{serial:e.code,location:p||(S.ed.get(i)||{}).location||S.meta.location,note:t||(S.ed.get(i)||{}).note||'',found:true,assetType:e.assetType||S.ed.get(i)?.assetType},Data.norm(e.code))));if(++n>=60)break;}if(!n)l.append(el('p','empty','Совпадений нет.'));}q.oninput=show;show();}
 function openCamera(mode,ctx){if(window.Phone)Phone.scan(mode,JSON.stringify(ctx));else fail(Error('Камера доступна в приложении Android.'));}
 function cameraValue(v,ctx){if(ctx.i!==undefined){card(ctx.i,Object.assign({},ctx.draft,{serial:v}),ctx.external);return;}closeDialog();return scan(v);}
 function cameraResult(mode,raw,ctx){if(ctx.project!==S.meta?.id)throw Error('Открыта другая ведомость. Повторите сканирование.');if(mode==='code')return cameraValue(raw,ctx);
@@ -149,7 +239,7 @@ function cameraResult(mode,raw,ctx){if(ctx.project!==S.meta?.id)throw Error('О�
   action('Принять номер',()=>run(()=>{if(!box.value.trim())throw Error('Введите номер.');return cameraValue(box.value.trim(),ctx);}));}
 function repeatBook(){modal('Повторная сверка');hint('Новая ведомость получит позиции и уточнённые серийные номера. Отметки предыдущей проверки сохранятся в прежней ведомости.');
   const x=field('Название новой ведомости',input(S.meta.title.slice(0,90)+' · '+new Date().toLocaleDateString('ru-RU'),'',120));
-  action('Начать сверку',()=>run(async()=>{if(!x.value.trim())throw Error('Введите название.');const e=[...S.ed.values()].filter(v=>typeof v.serial==='string').map(v=>({i:v.i,serial:v.serial}));const m={title:x.value.trim(),location:S.meta.location};if(S.meta.manual)m.manual=true;await create(m,S.base,e);closeDialog();note('Новая сверка начата.');}));}
+  action('Начать сверку',()=>run(async()=>{if(!x.value.trim())throw Error('Введите название.');const e=[...S.ed.values()].filter(v=>typeof v.serial==='string'||v.assetType).map(({i,serial,assetType})=>({i,serial,assetType}));const m={title:x.value.trim(),location:S.meta.location};if(S.meta.manual)m.manual=true;await create(m,S.base,e);closeDialog();note('Новая сверка начата.');}));}
 function pickFile(){if(window.Phone)Phone.open();else{$('file').value='';$('file').click();}}
 async function importBytes(file,bytes){
   if(bytes.length>32*1024*1024)throw Error('Файл превышает 32 МБ.');const ext=file.toLowerCase().split('.').pop();
@@ -192,10 +282,26 @@ function exportDialog(){modal('Отчёт и резервная копия');$('
 function back(){if(S.busy)return true;if(!$('veil').hidden){cancelDialog();return true;}if(S.view==='books'&&S.meta){home();render();return true;}return false;}
 async function init(){
   document.querySelectorAll('[data-icon]').forEach(v=>v.prepend(icon(v.dataset.icon)));$('books').onclick=()=>run(books);$('toHome').onclick=()=>{home();render();};$('loc').onclick=locationDialog;$('report').onclick=exportDialog;$('import').onclick=pickFile;$('repeat').onclick=repeatBook;$('newOffice').onclick=addOffice;$('newDevice').onclick=()=>addDevice();
+  $('appearance').onclick=appearanceDialog;
   $('dismiss').onclick=cancelDialog;$('veil').onclick=e=>{if(e.target===$('veil'))cancelDialog();};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&back())e.preventDefault();
     if(e.key==='Tab'&&!$('veil').hidden){const opts=Array.from($('sheet').querySelectorAll('button,input,select,textarea')).filter(x=>!x.disabled&&x.offsetParent!==null);if(opts.length&&((e.shiftKey&&document.activeElement===opts[0])||(!e.shiftKey&&document.activeElement===opts[opts.length-1]))){e.preventDefault();opts[e.shiftKey?opts.length-1:0].focus();}}});
   $('bar').onclick=()=>openCamera('code',{project:S.meta.id});$('ocr').onclick=()=>openCamera('ocr',{project:S.meta.id});
-  $('manual').onsubmit=e=>{e.preventDefault();run(async()=>{await scan($('number').value);$('number').value='';});};
+  $('number').oninput=event=>{
+    if(event.target.inputMode==='numeric')keepComputerDigits(event.target);
+    refreshManualType();
+  };
+  $('manualTypes').querySelectorAll('button').forEach(button=>{
+    button.onclick=()=>selectManualType(button.dataset.type);
+  });
+  $('manual').onsubmit=e=>{
+    e.preventDefault();
+    const field=$('number');
+    if(!field.value.trim()||(field.inputMode==='numeric'&&field.value==='C'))return;
+    run(async()=>{
+      await scan($('number').value,manualType());
+      resetManualEntry();
+    });
+  };
   $('q').oninput=()=>{S.q=$('q').value;S.limit=60;list();};$('more').onclick=()=>{S.limit+=80;list();};
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;S.limit=60;render();});
   $('file').onchange=e=>{const f=e.target.files[0];if(f)run(async()=>importBytes(f.name,new Uint8Array(await f.arrayBuffer())));};

@@ -1,7 +1,11 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'">
-<title>Сверка</title><link rel="stylesheet" href="style.css"><script defer src="vendor/exceljs.min.js"></script><script defer src="data.js"></script><script defer src="report.js"></script><script defer src="app.js"></script></head>
-<body><main id="shell"><header class="mast"><div class="brand"><span class="logo" aria-hidden="true"><i></i></span><h1>Сверка</h1></div><button id="report" data-icon="export" class="plain" hidden>Отчёт</button></header>
+<title>Сверка</title><script src="theme.js"></script><link rel="stylesheet" href="style.css"><script defer src="vendor/exceljs.min.js"></script><script defer src="data.js"></script><script defer src="report.js"></script><script defer src="app.js"></script></head>
+<body><main id="shell"><header class="mast"><div class="brand"><span class="logo" aria-hidden="true"><i></i></span><h1>Сверка</h1></div>
+<div class="mast-actions">
+  <button id="appearance" class="icon" type="button" data-icon="moon" aria-label="Оформление" title="Оформление"></button>
+  <button id="report" data-icon="export" class="plain" hidden>Отчёт</button>
+</div></header>
 <div id="boot" role="status">Открываем ведомость…</div>
 <section id="home" hidden><section class="hero">
 <button id="books" class="project" aria-label="Открыть ведомости"><span id="bookName"></span><small>Сменить ›</small></button>
@@ -9,7 +13,12 @@
 <div id="meter" class="meter" role="progressbar" aria-label="Ход сверки" aria-valuemin="0" aria-valuemax="100"><i id="fill"></i></div>
 <div class="foot"><span id="groups"></span><button id="loc"></button></div></section>
 <div class="entry"><div class="buttons"><button class="primary" id="bar" data-icon="scan">Сканировать код</button><button class="outline" id="ocr" data-icon="text">Считать S/N</button></div>
-<form id="manual" class="field"><i data-icon="keyboard"></i><input id="number" aria-label="Номер, ID или S/N" placeholder="Номер, ID или S/N" maxlength="1024" autocomplete="off" spellcheck="false" autocapitalize="characters" enterkeyhint="done"><button id="submit" class="icon" aria-label="Отметить номер" data-icon="enter"></button></form></div>
+<form id="manual" class="field"><i data-icon="keyboard"></i><input id="number" inputmode="text" aria-label="Номер, ID или S/N" placeholder="Номер, ID или S/N" maxlength="1024" autocomplete="off" spellcheck="false" autocapitalize="characters" enterkeyhint="done"><button id="submit" class="icon" aria-label="Отметить номер" data-icon="enter"></button></form>
+<div id="manualTypes" class="manual-types" role="group" aria-label="Тип оборудования">
+  <button class="outline" type="button" data-type="computer" aria-pressed="false">Компьютер</button>
+  <button class="outline" type="button" data-type="device" aria-pressed="false">Устройство</button>
+  <button class="outline" type="button" data-type="other" aria-pressed="false">Другое</button>
+</div></div>
 <div id="feedback" class="feedback" hidden role="status" aria-live="polite"><span id="msg"></span><button id="revert" hidden></button></div>
 <button id="newDevice" class="outline wide" data-icon="plus" hidden>Добавить оборудование</button>
 <div class="tabs" role="tablist"><button role="tab" data-tab="left">Осталось <b></b></button><button role="tab" data-tab="found">Найдено <b></b></button><button role="tab" data-tab="extra">Вне базы <b></b></button></div>

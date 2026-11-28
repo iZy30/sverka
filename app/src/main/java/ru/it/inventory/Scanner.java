@@ -38,6 +38,7 @@ public final class Scanner extends ComponentActivity {
     private BarcodeScanner decoder;private TextRecognizer text;
     private long last;
     @Override public void onCreate(Bundle state){
+        setTheme(Main.darkAppearance(this)?R.style.AppThemeDark:R.style.AppThemeLight);
         super.onCreate(state);
         ocr="ocr".equals(getIntent().getStringExtra("mode"));
         if(ocr)text=TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);else decoder=BarcodeScanning.getClient();
